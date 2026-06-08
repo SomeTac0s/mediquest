@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>MediQuest: Medical Terminology Trainer</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f3f8fb;
+      color: #1f2d3d;
+      text-align: center;
+    }
+
+    header {
+      background: #005f73;
+      color: white;
+      padding: 18px;
+    }
+
+    .screen {
+      display: none;
+      padding: 20px;
+    }
+
+    .active {
+      display: block;
+    }
+
+    button {
+      margin: 8px;
+      padding: 12px 18px;
+      border: none;
+      border-radius: 10px;
+      background: #0a9396;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #007f83;
+    }
+
+    .card {
+      background: white;
+      margin: 15px auto;
+      padding: 20px;
+      max-width: 500px;
+      border-radius: 15px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.15);
+    }
+
+    .ecg {
+      width: 280px;
+      height: 90px;
+      margin: 20px auto;
+      background: #001219;
+      border-radius: 12px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .line {
+      position: absolute;
+      top: 40px;
+      left: -280px;
+      width: 560px;
+      height: 4px;
+      background: linear-gradient(
+        90deg,
+        transparent,
+        #00ff88,
+        transparent
+      );
+      animation: pulse 1.5s infinite linear;
+    }
+
+    @keyframes pulse {
+      from { left: -280px; }
+      to { left: 280px; }
+    }
+
+    .organ {
+      display: inline-block;
+      margin: 10px;
+      padding: 20px;
+      border-radius: 50%;
+      background: #94d2bd;
+      font-size: 35px;
+      cursor: pointer;
+    }
+
+    .scoreBox {
+      font-size: 22px;
+      font-weight: bold;
+      color: #005f73;
+    }
+
+    .correct {
+      color: green;
+      font-weight: bold;
+    }
+
+    .wrong {
+      color: red;
+      font-weight: bold;
+    }
+
+    footer {
+      margin-top: 25px;
+      font-size: 13px;
+      color: #555;
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <h1>🩺 MediQuest</h1>
+  <p>Medical Terminology Adventure Trainer</p>
+</header>
+
+<!-- HOME SCREEN -->
+<div id="home" class="screen active">
+  <div class="card">
+    <h2>Welcome to MediQuest</h2>
+    <p>
+      This app helps pre-med students learn medical prefixes,
+      root words, suffixes, and body-system terminology.
+    </p>
+
+    <div class="ecg">
+      <div class="line"></div>
+    </div>
+
+    <button onclick="showScreen('learn')">Learn Mode</button>
+    <button onclick="showScreen('body')">Body Map</button>
+    <button onclick="showScreen('quiz')">Quiz Challenge</button>
+    <button onclick="showScreen('progress')">Progress</button>
+    <button onclick="showScreen('version')">Version II</button>
+  </div>
+</div>
+
+<!-- LEARN SCREEN -->
+<div id="learn" class="screen">
+  <div class="card">
+    <h2>Learn Medical Terms</h2>
+    <h3 id="termTitle">Cardio</h3>
+    <p id="termMeaning">Meaning: Heart</p>
+    <p id="termExample">Example: Cardiology = study of the heart</p>
+
+    <button onclick="speakTerm()">🔊 Pronounce</button>
+    <button onclick="nextTerm()">Next Term</button>
+    <button onclick="showScreen('home')">Back Home</button>
+  </div>
+</div>
+
+<!-- BODY MAP SCREEN -->
+<div id="body" class="screen">
+  <div class="card">
+    <h2>Interactive Body Map</h2>
+    <p>Tap an organ to learn related terminology.</p>
+
+    <div class="organ" onclick="showOrgan('Brain: Neuro = nerve or nervous system. Example: Neurology.')">🧠</div>
+    <div class="organ" onclick="showOrgan('Heart: Cardio = heart. Example: Cardiovascular.')">❤️</div>
+    <div class="organ" onclick="showOrgan('Stomach: Gastro = stomach. Example: Gastritis.')">🫁</div>
+    <div class="organ" onclick="showOrgan('Kidney: Nephro = kidney. Example: Nephritis.')">🫘</div>
+
+    <h3 id="organInfo">Choose an organ.</h3>
+
+    <button onclick="showScreen('home')">Back Home</button>
+  </div>
+</div>
+
+<!-- QUIZ SCREEN -->
+<div id="quiz" class="screen">
+  <div class="card">
+    <h2>Quiz Challenge</h2>
+    <p id="question">Question appears here</p>
+
+    <button onclick="checkAnswer(0)" id="ans0"></button>
+    <button onclick="checkAnswer(1)" id="ans1"></button>
+    <button onclick="checkAnswer(2)" id="ans2"></button>
+    <button onclick="checkAnswer(3)" id="ans3"></button>
+
+    <p id="feedback"></p>
+    <p class="scoreBox">Score: <span id="score">0</span></p>
+
+    <button onclick="loadQuestion()">Next Question</button>
+    <button onclick="showScreen('home')">Back Home</button>
+  </div>
+</div>
+
+<!-- PROGRESS SCREEN -->
+<div id="progress" class="screen">
+  <div class="card">
+    <h2>Learning Progress</h2>
+    <p>Total Quiz Score:</p>
+    <p class="scoreBox" id="finalScore">0</p>
+
+    <p>
+      Outcome: The user improves recognition of medical roots,
+      prefixes, suffixes, and meanings through repeated practice.
+    </p>
+
+    <button onclick="showScreen('home')">Back Home</button>
+  </div>
+</div>
+
+<!-- VERSION II SCREEN -->
+<div id="version" class="screen">
+  <div class="card">
+    <h2>Version II Improvements</h2>
+    <p>Future upgrades:</p>
+    <p>1. Voice recognition pronunciation test</p>
+    <p>2. Multiplayer medical quiz battle</p>
+    <p>3. Larger medical terminology database</p>
+    <p>4. AI explanation for difficult terms</p>
+    <p>5. Disease-based terminology scenarios</p>
+
+    <button onclick="showScreen('home')">Back Home</button>
+  </div>
+</div>
+
+<footer>
+  MediQuest Group Project | Medical + Educational App
+</footer>
+
+<script>
+  let currentTerm = 0;
+  let score = 0;
+  let currentQuestion = 0;
+
+  const terms = [
+    {
+      title: "Cardio",
+      meaning: "Meaning: Heart",
+      example: "Example: Cardiology = study of the heart"
+    },
+    {
+      title: "Neuro",
+      meaning: "Meaning: Nerve or nervous system",
+      example: "Example: Neurology = study of the nervous system"
+    },
+    {
+      title: "Gastro",
+      meaning: "Meaning: Stomach",
+      example: "Example: Gastritis = inflammation of the stomach"
+    },
+    {
+      title: "Nephro",
+      meaning: "Meaning: Kidney",
+      example: "Example: Nephritis = inflammation of the kidney"
+    },
+    {
+      title: "Derm",
+      meaning: "Meaning: Skin",
+      example: "Example: Dermatology = study of the skin"
+    }
+  ];
+
+  const questions = [
+    {
+      q: "What does 'cardio' mean?",
+      answers: ["Brain", "Heart", "Kidney", "Skin"],
+      correct: 1
+    },
+    {
+      q: "What does 'itis' usually mean?",
+      answers: ["Removal", "Pain", "Inflammation", "Blood"],
+      correct: 2
+    },
+    {
+      q: "What does 'nephro' refer to?",
+      answers: ["Kidney", "Liver", "Heart", "Lung"],
+      correct: 0
+    },
+    {
+      q: "What does 'derm' mean?",
+      answers: ["Bone", "Skin", "Blood", "Muscle"],
+      correct: 1
+    },
+    {
+      q: "What does 'hyper' mean?",
+      answers: ["Low", "High", "Slow", "Below"],
+      correct: 1
+    }
+  ];
+
+  function showScreen(screenId) {
+    const screens = document.querySelectorAll(".screen");
+    screens.forEach(screen => screen.classList.remove("active"));
+    document.getElementById(screenId).classList.add("active");
+
+    if (screenId === "progress") {
+      document.getElementById("finalScore").innerText = score;
+    }
+
+    if (screenId === "quiz") {
+      loadQuestion();
+    }
+  }
+
+  function nextTerm() {
+    currentTerm = (currentTerm + 1) % terms.length;
+    document.getElementById("termTitle").innerText = terms[currentTerm].title;
+    document.getElementById("termMeaning").innerText = terms[currentTerm].meaning;
+    document.getElementById("termExample").innerText = terms[currentTerm].example;
+  }
+
+  function speakTerm() {
+    const speech = new SpeechSynthesisUtterance(terms[currentTerm].title);
+    speech.lang = "en-US";
+    speechSynthesis.speak(speech);
+  }
+
+  function showOrgan(info) {
+    document.getElementById("organInfo").innerText = info;
+  }
+
+  function loadQuestion() {
+    currentQuestion = Math.floor(Math.random() * questions.length);
+    const q = questions[currentQuestion];
+
+    document.getElementById("question").innerText = q.q;
+    document.getElementById("ans0").innerText = q.answers[0];
+    document.getElementById("ans1").innerText = q.answers[1];
+    document.getElementById("ans2").innerText = q.answers[2];
+    document.getElementById("ans3").innerText = q.answers[3];
+    document.getElementById("feedback").innerText = "";
+  }
+
+  function checkAnswer(selected) {
+    const q = questions[currentQuestion];
+
+    if (selected === q.correct) {
+      score++;
+      document.getElementById("feedback").innerHTML = "<span class='correct'>Correct! Well done.</span>";
+      playBeep(600);
+    } else {
+      document.getElementById("feedback").innerHTML = "<span class='wrong'>Incorrect. Try reviewing the term.</span>";
+      playBeep(200);
+    }
+
+    document.getElementById("score").innerText = score;
+  }
+
+  function playBeep(frequency) {
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+
+    oscillator.frequency.value = frequency;
+    oscillator.type = "sine";
+
+    oscillator.start();
+    gainNode.gain.exponentialRampToValueAtTime(
+      0.00001,
+      audioCtx.currentTime + 0.3
+    );
+  }
+</script>
+
+</body>
+</html>
