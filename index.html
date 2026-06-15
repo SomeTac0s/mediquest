@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>IMUmedquest</title>
+  <!-- MIT App Inventor WebViewer-compatible version: ES5 JavaScript, no external files. -->
 
   <style>
     :root {
@@ -45,7 +46,6 @@
       margin: 0 auto;
       min-height: 100vh;
       background: rgba(255,255,255,0.54);
-      backdrop-filter: blur(10px);
       position: relative;
       overflow-x: hidden;
       padding-bottom: 90px;
@@ -335,7 +335,10 @@
 
     .flash-face {
       position: absolute;
-      inset: 0;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
       background:
         linear-gradient(145deg, rgba(255,255,255,0.98), rgba(245,241,255,0.95));
       border-radius: 26px;
@@ -571,8 +574,9 @@
       border-radius: 12px;
       background: linear-gradient(135deg, var(--purple), var(--blue));
       color: white;
-      display: grid;
-      place-items: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       flex: 0 0 auto;
       font-weight: 900;
     }
@@ -595,7 +599,8 @@
       left: 50%;
       bottom: 10px;
       transform: translateX(-50%);
-      width: min(460px, calc(100% - 20px));
+      width: calc(100% - 20px);
+      max-width: 460px;
       background: rgba(255,255,255,0.96);
       border: 1px solid rgba(53,20,107,0.10);
       border-radius: 24px;
@@ -604,7 +609,6 @@
       grid-template-columns: repeat(5, 1fr);
       padding: 7px;
       z-index: 50;
-      backdrop-filter: blur(12px);
     }
 
     .bottom-nav button {
@@ -632,7 +636,10 @@
 
     .modal {
       position: fixed;
-      inset: 0;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
       z-index: 100;
       background: rgba(10, 5, 25, 0.66);
       display: none;
@@ -646,7 +653,8 @@
     }
 
     .modal-card {
-      width: min(390px, 100%);
+      width: 100%;
+      max-width: 390px;
       border-radius: 30px;
       padding: 26px 20px 20px;
       background: white;
@@ -1080,7 +1088,7 @@
   </div>
 
   <script>
-    const flashcards = [
+    var flashcards = [
       { term: "cardio", meaning: "Heart.", example: "Cardiology is the study of the heart." },
       { term: "neuro", meaning: "Nerve or nervous system.", example: "Neurology focuses on the brain, spinal cord, and nerves." },
       { term: "gastro", meaning: "Stomach.", example: "Gastroenteritis is inflammation of the stomach and intestines." },
@@ -1138,7 +1146,7 @@
       { term: "hematuria", meaning: "Blood in urine.", example: "Kidney stones may cause hematuria." }
     ];
 
-    const questionBank = [
+    var questionBank = [
       { q: "What does the root word cardio refer to?", a: "Heart", o: ["Heart", "Skin", "Kidney", "Liver"] },
       { q: "What does neuro refer to?", a: "Nervous system", o: ["Nervous system", "Bone", "Blood", "Stomach"] },
       { q: "What does gastro refer to?", a: "Stomach", o: ["Stomach", "Lung", "Eye", "Skin"] },
@@ -1249,95 +1257,216 @@
       { q: "The anatomical term distal means:", a: "Farther from the point of attachment", o: ["Farther from the point of attachment", "Closer to attachment", "Toward the head", "Toward the midline"] }
     ];
 
-    let currentCard = 0;
-    let quizQuestions = [];
-    let currentQuestionIndex = 0;
-    let score = 0;
-    let attemptResults = [];
-    let audioCtx = null;
+    var currentCard = 0;
+    var quizQuestions = [];
+    var currentQuestionIndex = 0;
+    var score = 0;
+    var attemptResults = [];
+    var audioCtx = null;
 
-    const pages = document.querySelectorAll(".page");
-    const navButtons = document.querySelectorAll("[data-target]");
-    const bottomButtons = document.querySelectorAll(".bottom-nav button");
+    function byId(id) {
+      return document.getElementById(id);
+    }
+
+    function addClass(el, cls) {
+      if (!el) return;
+      if ((" " + el.className + " ").indexOf(" " + cls + " ") === -1) {
+        el.className = el.className ? el.className + " " + cls : cls;
+      }
+    }
+
+    function removeClass(el, cls) {
+      if (!el) return;
+      var reg = new RegExp("(^|\\s)" + cls + "(\\s|$)", "g");
+      el.className = el.className.replace(reg, " ").replace(/^\s+|\s+$/g, "");
+    }
+
+    function hasClass(el, cls) {
+      return el && (" " + el.className + " ").indexOf(" " + cls + " ") !== -1;
+    }
+
+    function safeSetText(id, text) {
+      var el = byId(id);
+      if (!el) return;
+      if ("textContent" in el) {
+        el.textContent = text;
+      } else {
+        el.innerText = text;
+      }
+    }
+
+    function safeSetElementText(el, text) {
+      if (!el) return;
+      if ("textContent" in el) {
+        el.textContent = text;
+      } else {
+        el.innerText = text;
+      }
+    }
+
+    function safeGetStorage(key) {
+      try {
+        if (window.localStorage) {
+          return localStorage.getItem(key);
+        }
+      } catch(e) {}
+      return null;
+    }
+
+    function safeSetStorage(key, value) {
+      try {
+        if (window.localStorage) {
+          localStorage.setItem(key, value);
+        }
+      } catch(e) {}
+    }
 
     function navigateTo(target) {
-      pages.forEach(page => page.classList.remove("active"));
-      document.getElementById(target).classList.add("active");
+      var pages = document.getElementsByClassName("page");
+      var i;
 
-      bottomButtons.forEach(btn => {
-        btn.classList.toggle("active", btn.dataset.target === target);
-      });
+      for (i = 0; i < pages.length; i++) {
+        removeClass(pages[i], "active");
+      }
+
+      addClass(byId(target), "active");
+
+      var bottomButtons = document.querySelectorAll(".bottom-nav button");
+      for (i = 0; i < bottomButtons.length; i++) {
+        removeClass(bottomButtons[i], "active");
+        if (bottomButtons[i].getAttribute("data-target") === target) {
+          addClass(bottomButtons[i], "active");
+        }
+      }
 
       if (target === "progress") {
         renderProgress();
       }
 
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      try {
+        window.scrollTo(0, 0);
+      } catch(e) {}
     }
 
-    navButtons.forEach(btn => {
-      btn.addEventListener("click", () => navigateTo(btn.dataset.target));
-    });
+    function bindNavigation() {
+      var navButtons = document.querySelectorAll("[data-target]");
+      var i;
+
+      for (i = 0; i < navButtons.length; i++) {
+        navButtons[i].onclick = function() {
+          var target = this.getAttribute("data-target");
+          if (target) {
+            navigateTo(target);
+          }
+        };
+      }
+    }
 
     function renderFlashcard() {
-      const card = flashcards[currentCard];
-      document.getElementById("flashcard").classList.remove("flipped");
-      document.getElementById("flashTerm").textContent = card.term;
-      document.getElementById("flashMeaning").textContent = card.meaning;
-      document.getElementById("flashExample").textContent = "Example: " + card.example;
-      document.getElementById("flashCounter").textContent = `Flashcard ${currentCard + 1} of ${flashcards.length}`;
+      var card = flashcards[currentCard];
+      var flashcard = byId("flashcard");
+
+      removeClass(flashcard, "flipped");
+      safeSetText("flashTerm", card.term);
+      safeSetText("flashMeaning", card.meaning);
+      safeSetText("flashExample", "Example: " + card.example);
+      safeSetText("flashCounter", "Flashcard " + (currentCard + 1) + " of " + flashcards.length);
     }
 
-    document.getElementById("flashcard").addEventListener("click", () => {
-      document.getElementById("flashcard").classList.toggle("flipped");
-    });
+    function initFlashcards() {
+      byId("flashcard").onclick = function() {
+        if (hasClass(this, "flipped")) {
+          removeClass(this, "flipped");
+        } else {
+          addClass(this, "flipped");
+        }
+      };
 
-    document.getElementById("prevCard").addEventListener("click", () => {
-      currentCard = (currentCard - 1 + flashcards.length) % flashcards.length;
-      renderFlashcard();
-    });
+      byId("prevCard").onclick = function() {
+        currentCard = currentCard - 1;
+        if (currentCard < 0) {
+          currentCard = flashcards.length - 1;
+        }
+        renderFlashcard();
+      };
 
-    document.getElementById("nextCard").addEventListener("click", () => {
-      currentCard = (currentCard + 1) % flashcards.length;
-      renderFlashcard();
-    });
+      byId("nextCard").onclick = function() {
+        currentCard = currentCard + 1;
+        if (currentCard >= flashcards.length) {
+          currentCard = 0;
+        }
+        renderFlashcard();
+      };
 
-    document.getElementById("speakCard").addEventListener("click", () => {
-      const term = flashcards[currentCard].term;
-      if ("speechSynthesis" in window) {
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(term);
-        utterance.lang = "en-US";
-        utterance.rate = 0.78;
-        utterance.pitch = 1;
-        window.speechSynthesis.speak(utterance);
-      } else {
-        playTone(540, 0.12, "sine", 0.12);
+      byId("speakCard").onclick = function() {
+        speakCurrentTerm();
+      };
+    }
+
+    function speakCurrentTerm() {
+      var term = flashcards[currentCard].term;
+
+      try {
+        if (window.AppInventor && window.AppInventor.setWebViewString) {
+          window.AppInventor.setWebViewString("SPEAK:" + term);
+        }
+      } catch(e) {}
+
+      try {
+        if ("speechSynthesis" in window && window.SpeechSynthesisUtterance) {
+          window.speechSynthesis.cancel();
+          var utterance = new SpeechSynthesisUtterance(term);
+          utterance.lang = "en-US";
+          utterance.rate = 0.78;
+          utterance.pitch = 1;
+          window.speechSynthesis.speak(utterance);
+        } else {
+          playTone(540, 0.12, "sine", 0.12, 0);
+        }
+      } catch(e2) {
+        playTone(540, 0.12, "sine", 0.12, 0);
       }
-    });
+    }
 
     function getAudioContext() {
-      if (!audioCtx) {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      try {
+        if (!audioCtx) {
+          var AudioClass = window.AudioContext || window.webkitAudioContext;
+          if (!AudioClass) return null;
+          audioCtx = new AudioClass();
+        }
+
+        if (audioCtx && audioCtx.state === "suspended" && audioCtx.resume) {
+          audioCtx.resume();
+        }
+
+        return audioCtx;
+      } catch(e) {
+        return null;
       }
-      return audioCtx;
     }
 
-    function playTone(freq, duration, type = "sine", volume = 0.15, delay = 0) {
-      const ctx = getAudioContext();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
+    function playTone(freq, duration, type, volume, delay) {
+      var ctx = getAudioContext();
+      if (!ctx) return;
 
-      osc.type = type;
-      osc.frequency.setValueAtTime(freq, ctx.currentTime + delay);
-      gain.gain.setValueAtTime(0.0001, ctx.currentTime + delay);
-      gain.gain.exponentialRampToValueAtTime(volume, ctx.currentTime + delay + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + delay + duration);
+      try {
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
 
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(ctx.currentTime + delay);
-      osc.stop(ctx.currentTime + delay + duration + 0.03);
+        osc.type = type || "sine";
+        osc.frequency.setValueAtTime(freq, ctx.currentTime + delay);
+
+        gain.gain.setValueAtTime(0.0001, ctx.currentTime + delay);
+        gain.gain.exponentialRampToValueAtTime(volume, ctx.currentTime + delay + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + delay + duration);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(ctx.currentTime + delay);
+        osc.stop(ctx.currentTime + delay + duration + 0.03);
+      } catch(e) {}
     }
 
     function playCorrectSound() {
@@ -1355,93 +1484,123 @@
       playTone(659, 0.13, "triangle", 0.12, 0.12);
       playTone(784, 0.16, "triangle", 0.13, 0.24);
       playTone(1046, 0.25, "triangle", 0.13, 0.40);
-
-      for (let i = 0; i < 8; i++) {
-        playTone(760 + Math.random() * 450, 0.06, "square", 0.035, 0.12 + i * 0.07);
-      }
+      playTone(880, 0.08, "square", 0.04, 0.10);
+      playTone(940, 0.08, "square", 0.04, 0.20);
+      playTone(1010, 0.08, "square", 0.04, 0.30);
+      playTone(1100, 0.08, "square", 0.04, 0.40);
     }
 
     function playBooSound() {
       playTone(180, 0.45, "sawtooth", 0.10, 0);
       playTone(150, 0.55, "sawtooth", 0.09, 0.18);
       playTone(120, 0.65, "sawtooth", 0.08, 0.36);
-
-      for (let i = 0; i < 5; i++) {
-        playTone(95 + Math.random() * 40, 0.16, "square", 0.04, i * 0.18);
-      }
+      playTone(95, 0.16, "square", 0.04, 0.04);
+      playTone(110, 0.16, "square", 0.04, 0.23);
+      playTone(88, 0.16, "square", 0.04, 0.42);
     }
 
     function shuffleArray(array) {
-      const copy = [...array];
-      for (let i = copy.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [copy[i], copy[j]] = [copy[j], copy[i]];
+      var copy = array.slice(0);
+      var i, j, temp;
+
+      for (i = copy.length - 1; i > 0; i--) {
+        j = Math.floor(Math.random() * (i + 1));
+        temp = copy[i];
+        copy[i] = copy[j];
+        copy[j] = temp;
       }
+
       return copy;
     }
 
     function startQuiz() {
       getAudioContext();
 
-      let shuffled = shuffleArray(questionBank).slice(0, 10);
-      const previousFirstQuestion = localStorage.getItem("imuLastFirstQuestion");
+      var shuffled = shuffleArray(questionBank).slice(0, 10);
+      var previousFirstQuestion = safeGetStorage("imuLastFirstQuestion");
+      var swapIndex;
+      var temp;
+      var i;
 
-      if (previousFirstQuestion && shuffled[0].q === previousFirstQuestion) {
-        const swapIndex = shuffled.findIndex(item => item.q !== previousFirstQuestion);
+      if (previousFirstQuestion && shuffled.length > 1 && shuffled[0].q === previousFirstQuestion) {
+        swapIndex = -1;
+        for (i = 1; i < shuffled.length; i++) {
+          if (shuffled[i].q !== previousFirstQuestion) {
+            swapIndex = i;
+            break;
+          }
+        }
+
         if (swapIndex > 0) {
-          [shuffled[0], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[0]];
+          temp = shuffled[0];
+          shuffled[0] = shuffled[swapIndex];
+          shuffled[swapIndex] = temp;
         }
       }
 
-      localStorage.setItem("imuLastFirstQuestion", shuffled[0].q);
+      safeSetStorage("imuLastFirstQuestion", shuffled[0].q);
 
       quizQuestions = shuffled;
       currentQuestionIndex = 0;
       score = 0;
       attemptResults = [];
 
-      document.getElementById("quizIntro").style.display = "none";
-      document.getElementById("quizResultPanel").classList.remove("show");
-      document.getElementById("quizArea").style.display = "block";
+      byId("quizIntro").style.display = "none";
+      removeClass(byId("quizResultPanel"), "show");
+      byId("quizArea").style.display = "block";
 
       renderQuestion();
     }
 
     function renderQuestion() {
-      const current = quizQuestions[currentQuestionIndex];
-      document.getElementById("questionCounter").textContent = `Question ${currentQuestionIndex + 1} / 10`;
-      document.getElementById("scoreCounter").textContent = `Score: ${score}`;
-      document.getElementById("questionText").textContent = current.q;
+      var current = quizQuestions[currentQuestionIndex];
+      var optionsContainer = byId("options");
+      var shuffledOptions = shuffleArray(current.o);
+      var i;
+      var option;
+      var btn;
 
-      const optionsContainer = document.getElementById("options");
+      safeSetText("questionCounter", "Question " + (currentQuestionIndex + 1) + " / 10");
+      safeSetText("scoreCounter", "Score: " + score);
+      safeSetText("questionText", current.q);
+
       optionsContainer.innerHTML = "";
 
-      shuffleArray(current.o).forEach(option => {
-        const btn = document.createElement("button");
+      for (i = 0; i < shuffledOptions.length; i++) {
+        option = shuffledOptions[i];
+        btn = document.createElement("button");
+
         btn.className = "option-btn";
-        btn.textContent = option;
-        btn.addEventListener("click", () => selectAnswer(option, btn));
+        btn.setAttribute("data-answer", option);
+        safeSetElementText(btn, option);
+
+        btn.onclick = function() {
+          selectAnswer(this.getAttribute("data-answer"), this);
+        };
+
         optionsContainer.appendChild(btn);
-      });
+      }
     }
 
     function selectAnswer(selected, selectedButton) {
-      const current = quizQuestions[currentQuestionIndex];
-      const isCorrect = selected === current.a;
-      const buttons = document.querySelectorAll(".option-btn");
+      var current = quizQuestions[currentQuestionIndex];
+      var isCorrect = selected === current.a;
+      var buttons = document.querySelectorAll(".option-btn");
+      var i;
 
-      buttons.forEach(btn => {
-        btn.disabled = true;
-        if (btn.textContent === current.a) {
-          btn.classList.add("correct");
+      for (i = 0; i < buttons.length; i++) {
+        buttons[i].disabled = true;
+
+        if (buttons[i].getAttribute("data-answer") === current.a) {
+          addClass(buttons[i], "correct");
         }
-      });
+      }
 
       if (isCorrect) {
         score++;
         playCorrectSound();
       } else {
-        selectedButton.classList.add("incorrect");
+        addClass(selectedButton, "incorrect");
         playIncorrectSound();
       }
 
@@ -1453,10 +1612,11 @@
         result: isCorrect ? "Correct" : "Incorrect"
       });
 
-      document.getElementById("scoreCounter").textContent = `Score: ${score}`;
+      safeSetText("scoreCounter", "Score: " + score);
 
-      setTimeout(() => {
+      setTimeout(function() {
         currentQuestionIndex++;
+
         if (currentQuestionIndex < 10) {
           renderQuestion();
         } else {
@@ -1466,34 +1626,32 @@
     }
 
     function finishQuiz() {
-      document.getElementById("quizArea").style.display = "none";
+      byId("quizArea").style.display = "none";
 
-      const percentage = score * 10;
-      const good = score >= 6;
-      const message = good
+      var percentage = score * 10;
+      var good = score >= 6;
+      var message = good
         ? "Yey! You are going to be an amazing doctor."
         : "Oh no, you're going to fail med school.";
 
-      const performanceCategory = getPerformanceCategory(score);
-
-      const latest = {
-        score,
-        percentage,
-        message,
-        performanceCategory,
+      var latest = {
+        score: score,
+        percentage: percentage,
+        message: message,
+        performanceCategory: getPerformanceCategory(score),
         results: attemptResults,
         timestamp: new Date().toLocaleString()
       };
 
-      localStorage.setItem("imuLatestQuiz", JSON.stringify(latest));
+      safeSetStorage("imuLatestQuiz", JSON.stringify(latest));
 
       showResultPopup(good, message);
     }
 
     function showResultPopup(good, message) {
-      document.getElementById("modalEmoji").textContent = good ? "😊👍" : "☹️👎";
-      document.getElementById("modalMessage").textContent = message;
-      document.getElementById("resultModal").classList.add("show");
+      safeSetText("modalEmoji", good ? "😊👍" : "☹️👎");
+      safeSetText("modalMessage", message);
+      addClass(byId("resultModal"), "show");
 
       if (good) {
         playCheerSound();
@@ -1502,100 +1660,129 @@
       }
     }
 
-    document.getElementById("modalClose").addEventListener("click", () => {
-      document.getElementById("resultModal").classList.remove("show");
-      renderQuizResultPanel();
-    });
-
     function renderQuizResultPanel() {
-      const latest = getLatestQuiz();
+      var latest = getLatestQuiz();
       if (!latest) return;
 
-      document.getElementById("quizResultPanel").classList.add("show");
-      document.getElementById("quizFinalScore").textContent = `${latest.score}/10`;
-      document.getElementById("quizFinalMessage").innerHTML = `
-        <strong>${latest.percentage}%</strong><br>
-        ${latest.performanceCategory}<br>
-        ${latest.message}
-      `;
+      addClass(byId("quizResultPanel"), "show");
+      safeSetText("quizFinalScore", latest.score + "/10");
+
+      byId("quizFinalMessage").innerHTML =
+        "<strong>" + latest.percentage + "%</strong><br>" +
+        escapeHTML(latest.performanceCategory) + "<br>" +
+        escapeHTML(latest.message);
     }
 
-    function getPerformanceCategory(score) {
-      if (score <= 2) return "Critical Revision Needed";
-      if (score <= 5) return "Needs Improvement";
-      if (score <= 7) return "Good Foundation";
-      if (score <= 9) return "Excellent Progress";
+    function getPerformanceCategory(scoreValue) {
+      if (scoreValue <= 2) return "Critical Revision Needed";
+      if (scoreValue <= 5) return "Needs Improvement";
+      if (scoreValue <= 7) return "Good Foundation";
+      if (scoreValue <= 9) return "Excellent Progress";
       return "Outstanding Medical Scholar";
     }
 
     function getLatestQuiz() {
-      const data = localStorage.getItem("imuLatestQuiz");
-      return data ? JSON.parse(data) : null;
+      var data = safeGetStorage("imuLatestQuiz");
+
+      if (data) {
+        try {
+          return JSON.parse(data);
+        } catch(e) {
+          return null;
+        }
+      }
+
+      return null;
     }
 
     function renderProgress() {
-      const latest = getLatestQuiz();
-      const summary = document.getElementById("progressSummary");
-      const tableArea = document.getElementById("resultsTableArea");
+      var latest = getLatestQuiz();
+      var summary = byId("progressSummary");
+      var tableArea = byId("resultsTableArea");
+      var rows = "";
+      var i;
+      var item;
+      var resultClass;
 
       if (!latest) {
-        summary.innerHTML = `<div class="empty-state">No quiz attempt has been completed yet. Go to the Quiz page and complete one 10-question attempt.</div>`;
-        tableArea.innerHTML = `<div class="empty-state">Your detailed results table will appear here after your first quiz.</div>`;
+        summary.innerHTML = '<div class="empty-state">No quiz attempt has been completed yet. Go to the Quiz page and complete one 10-question attempt.</div>';
+        tableArea.innerHTML = '<div class="empty-state">Your detailed results table will appear here after your first quiz.</div>';
         return;
       }
 
-      summary.innerHTML = `
-        <div class="big-score">${latest.score}/10</div>
-        <div class="performance">
-          <strong>${latest.percentage}%</strong><br>
-          ${latest.performanceCategory}<br>
-          ${latest.message}<br>
-          <small>Latest attempt: ${latest.timestamp}</small>
-        </div>
-      `;
+      summary.innerHTML =
+        '<div class="big-score">' + latest.score + '/10</div>' +
+        '<div class="performance">' +
+        '<strong>' + latest.percentage + '%</strong><br>' +
+        escapeHTML(latest.performanceCategory) + '<br>' +
+        escapeHTML(latest.message) + '<br>' +
+        '<small>Latest attempt: ' + escapeHTML(latest.timestamp) + '</small>' +
+        '</div>';
 
-      let rows = latest.results.map(item => `
-        <tr>
-          <td>${item.number}</td>
-          <td>${escapeHTML(item.question)}</td>
-          <td>${escapeHTML(item.selected)}</td>
-          <td>${escapeHTML(item.correct)}</td>
-          <td class="${item.result === "Correct" ? "correct-text" : "wrong-text"}">${item.result}</td>
-        </tr>
-      `).join("");
+      for (i = 0; i < latest.results.length; i++) {
+        item = latest.results[i];
+        resultClass = item.result === "Correct" ? "correct-text" : "wrong-text";
 
-      tableArea.innerHTML = `
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Question Number</th>
-                <th>Question</th>
-                <th>Selected Answer</th>
-                <th>Correct Answer</th>
-                <th>Result</th>
-              </tr>
-            </thead>
-            <tbody>${rows}</tbody>
-          </table>
-        </div>
-      `;
+        rows +=
+          '<tr>' +
+          '<td>' + item.number + '</td>' +
+          '<td>' + escapeHTML(item.question) + '</td>' +
+          '<td>' + escapeHTML(item.selected) + '</td>' +
+          '<td>' + escapeHTML(item.correct) + '</td>' +
+          '<td class="' + resultClass + '">' + escapeHTML(item.result) + '</td>' +
+          '</tr>';
+      }
+
+      tableArea.innerHTML =
+        '<div class="table-wrap">' +
+        '<table>' +
+        '<thead>' +
+        '<tr>' +
+        '<th>Question Number</th>' +
+        '<th>Question</th>' +
+        '<th>Selected Answer</th>' +
+        '<th>Correct Answer</th>' +
+        '<th>Result</th>' +
+        '</tr>' +
+        '</thead>' +
+        '<tbody>' + rows + '</tbody>' +
+        '</table>' +
+        '</div>';
     }
 
     function escapeHTML(text) {
-      return String(text)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
+      text = String(text);
+      return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
     }
 
-    document.getElementById("startQuiz").addEventListener("click", startQuiz);
-    document.getElementById("retryQuiz").addEventListener("click", startQuiz);
+    function initApp() {
+      bindNavigation();
+      initFlashcards();
 
-    renderFlashcard();
-    renderProgress();
+      byId("startQuiz").onclick = startQuiz;
+      byId("retryQuiz").onclick = startQuiz;
+
+      byId("modalClose").onclick = function() {
+        removeClass(byId("resultModal"), "show");
+        renderQuizResultPanel();
+      };
+
+      renderFlashcard();
+      renderProgress();
+    }
+
+    if (window.addEventListener) {
+      window.addEventListener("load", initApp, false);
+    } else if (window.attachEvent) {
+      window.attachEvent("onload", initApp);
+    } else {
+      window.onload = initApp;
+    }
   </script>
 </body>
 </html>
